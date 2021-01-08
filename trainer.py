@@ -28,3 +28,11 @@ def split_data(stock, lookback):
     y_test = data[train_set_size:,-1,:]
 
     return [x_train, y_train, x_test, y_test]
+
+# set sequence length
+lookback = 20
+x_train, y_train, x_test, y_test = split_data(price, lookback)
+print('x_train.shape = ',x_train.shape)
+print('y_train.shape = ',y_train.shape)
+print('x_test.shape = ',x_test.shape)
+print('y_test.shape = ',y_test.shape)
