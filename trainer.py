@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import MinMaxScaler
+import torch
+import torch.nn as nn
 
 price = data[['Close']]
 
@@ -36,3 +38,10 @@ print('x_train.shape = ',x_train.shape)
 print('y_train.shape = ',y_train.shape)
 print('x_test.shape = ',x_test.shape)
 print('y_test.shape = ',y_test.shape)
+
+x_train = torch.from_numpy(x_train).type(torch.Tensor)
+x_test = torch.from_numpy(x_test).type(torch.Tensor)
+y_train_lstm = torch.from_numpy(y_train).type(torch.Tensor)
+y_test_lstm = torch.from_numpy(y_test).type(torch.Tensor)
+y_train_gru = torch.from_numpy(y_train).type(torch.Tensor)
+y_test_gru = torch.from_numpy(y_test).type(torch.Tensor)
