@@ -6,6 +6,8 @@ import seaborn as sns
 from sklearn.preprocessing import MinMaxScaler
 import torch
 import torch.nn as nn
+import time
+import csv
 
 price = data[['Close']]
 
@@ -65,3 +67,31 @@ class LSTM(nn.Module):
         out, (hn, cn) = self.lstm(x, (h0.detach(), c0.detach()))
         out = self.fc(out[:, -1, :])
         return out
+
+model = LSTM(input_dim=input_dim, hidden_dim=hidden_dim, output_dim=output_dim, num_layers=num_layers)
+criterion = torch.nn.MSELoss(reduction='mean')
+optimiser = torch.optim.Adam(model.parameters(), lr=0.01)
+
+hist = np.zeros(num_epochs)
+start_time = time.time()
+lstm = []
+
+csvfile = open('epochs.csv','w')
+fieldnames = ['Epoch', 'MSE']
+writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+writer.writeheader()
+
+for t in range(num_epochs):
+    y_train_pred = model(x_train)
+
+    loss = criterion(y_train_pred, y_train_lstm)
+    writer.writerow({'Epoch': t, 'MSE': loss.item()})
+
+    hist[t] = loss.item()
+
+    optimiser.zero_grad()
+    loss.backward()
+    optimiser.step()
+
+training_time = time.time()-start_time
+print("Training time: {}".format(training_time))
