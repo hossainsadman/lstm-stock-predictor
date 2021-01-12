@@ -4,6 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_squared_error
+import plotly.graph_objects as go
+import math
 import torch
 import torch.nn as nn
 import time
@@ -117,3 +120,91 @@ ax.set_ylabel("Loss", size = 14)
 ax.set_title("Training Loss", size = 14, fontweight='bold')
 fig.set_figheight(6)
 fig.set_figwidth(16)
+
+# create and invert predictions
+y_test_pred = model(x_test)
+y_train_pred = scaler.inverse_transform(y_train_pred.detach().numpy())
+y_train = scaler.inverse_transform(y_train_lstm.detach().numpy())
+y_test_pred = scaler.inverse_transform(y_test_pred.detach().numpy())
+y_test = scaler.inverse_transform(y_test_lstm.detach().numpy())
+
+# calculate root mean squared error
+trainScore = math.sqrt(mean_squared_error(y_train[:,0], y_train_pred[:,0]))
+print('Train Score: %.2f RMSE' % (trainScore))
+testScore = math.sqrt(mean_squared_error(y_test[:,0], y_test_pred[:,0]))
+print('Test Score: %.2f RMSE' % (testScore))
+lstm.append(trainScore)
+lstm.append(testScore)
+lstm.append(training_time)
+
+# shift train predictions for plotting
+trainPredictPlot = np.empty_like(price)
+trainPredictPlot[:, :] = np.nan
+trainPredictPlot[lookback:len(y_train_pred)+lookback, :] = y_train_pred
+
+# shift test predictions for plotting
+testPredictPlot = np.empty_like(price)
+testPredictPlot[:, :] = np.nan
+testPredictPlot[len(y_train_pred)+lookback-1:len(price)-1, :] = y_test_pred
+
+original = scaler.inverse_transform(price['Close'].values.reshape(-1,1))
+
+predictions = np.append(trainPredictPlot, testPredictPlot, axis=1)
+predictions = np.append(predictions, original, axis=1)
+result = pd.DataFrame(predictions)
+
+fig = go.Figure()
+
+fig.add_trace(go.Scatter(go.Scatter(x=result.index, y=result[2],
+                    mode='lines',
+                    name='Actual value')))
+fig.add_trace(go.Scatter(x=result.index, y=result[1],
+                    mode='lines',
+                    name='Test prediction'))
+fig.add_trace(go.Scatter(go.Scatter(x=result.index, y=result[0],
+                    mode='lines',
+                    name='Train prediction')))
+
+fig.update_layout(font_family="Inter")
+
+fig.update_layout(
+    xaxis=dict(
+        title_text="Date",
+        showline=True,
+        showgrid=False,
+        showticklabels=False,
+        linecolor='black',
+        linewidth=2
+    ),
+    yaxis=dict(
+        title_text='Close (USD)',
+        titlefont=dict(
+            size=12,
+            color='black',
+        ),
+        showline=True,
+        showgrid=True,
+        showticklabels=True,
+        linecolor='black',
+        linewidth=2,
+        ticks='outside',
+        tickfont=dict(
+            size=12,
+            color='black',
+        ),
+    ),
+    showlegend=True,
+    template = 'plotly'
+
+)
+
+annotations = []
+annotations.append(dict(xref='paper', yref='paper', x=0.0, y=1.05,
+                              xanchor='left', yanchor='bottom',
+                              text='Actual Value & Train and Test Predictions Using LSTM',
+                              font=dict(family='Inter',
+                                        size=26,
+                                        color='black'),
+                              showarrow=False))
+fig.update_layout(annotations=annotations)
+fig.show()
